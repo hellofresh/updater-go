@@ -1,0 +1,17 @@
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# IntelliJ project files
+.idea
+*.iml
+out
+gen### macOS template
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+vendor/
