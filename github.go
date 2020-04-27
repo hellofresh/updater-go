@@ -70,13 +70,12 @@ func NewGithubClient(
 			&oauth2.Token{AccessToken: token},
 		)
 		httpClient = oauth2.NewClient(context.Background(), src)
+		httpClient.Timeout = connectionTimeout
 	}
 
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = &http.Client{Timeout: connectionTimeout}
 	}
-
-	httpClient.Timeout = connectionTimeout
 
 	client := githubv4.NewClient(httpClient)
 	return &GithubLocator{
