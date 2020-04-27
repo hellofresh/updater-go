@@ -50,7 +50,7 @@ fi
 echo ${PASS}
 
 echo "${OK_COLOR}Lintting: ${NO_COLOR}"
-ERRS=$(golint ${TARGETS} 2>&1 || true)
+ERRS=$(${GOPATH}/bin/golint ${TARGETS} 2>&1 || true)
 if [ -n "${ERRS}" ]; then
     echo ${FAIL}
     echo "${ERRS}"
