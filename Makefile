@@ -16,16 +16,15 @@ all: deps test lint
 
 deps:
 	@echo "$(OK_COLOR)==> Installing dependencies$(NO_COLOR)"
-	@go get -u github.com/golang/dep/cmd/dep
-	@go get -u github.com/golang/lint/golint
-	@dep ensure -v -vendor-only
+	@go get -u golang.org/x/lint/golint
+	@go mod vendor -v
 
 test:
 	@/bin/sh -c "./build/test.sh $(allpackages)"
 
 lint:
 	@echo "$(OK_COLOR)==> Linting... $(NO_COLOR)"
-	@golint $(allpackages)
+	@$(GOPATH)/bin/golint $(allpackages)
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( go list ./... 2>&1 1>&3 | \
