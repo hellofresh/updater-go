@@ -3,33 +3,14 @@ OK_COLOR=\033[32;01m
 ERROR_COLOR=\033[31;01m
 WARN_COLOR=\033[33;01m
 
-# The import path is the unique absolute name of your repository.
-# All subpackages should always be imported as relative to it.
-IMPORT_PATH := github.com/hellofresh/updater-go
+.PHONY: all test lint
 
-# Space separated patterns of packages to skip in list, test, format.
-IGNORED_PACKAGES := /vendor/
-
-.PHONY: all deps test lint
-
-all: deps test lint
-
-deps:
-	@echo "$(OK_COLOR)==> Installing dependencies$(NO_COLOR)"
-	@go get -u golang.org/x/lint/golint
-	@go mod vendor -v
+all: lint test
 
 test:
-	@/bin/sh -c "./build/test.sh $(allpackages)"
+	@echo "$(OK_COLOR)==> Running tests$(NO_COLOR)"
+	@go test -cover ./... -coverprofile=coverage.txt -covermode=atomic
 
 lint:
-	@echo "$(OK_COLOR)==> Linting... $(NO_COLOR)"
-	@$(GOPATH)/bin/golint $(allpackages)
-
-# cd into the GOPATH to workaround ./... not following symlinks
-_allpackages = $(shell ( go list ./... 2>&1 1>&3 | \
-    grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) 1>&2 ) 3>&1 | \
-    grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)))
-
-# memoize allpackages, so that it's executed only once and only if used
-allpackages = $(if $(__allpackages),,$(eval __allpackages := $$(_allpackages)))$(__allpackages)
+	@echo "$(OK_COLOR)==> Linting with golangci-lint$(NO_COLOR)"
+	@docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.35.2 golangci-lint run -v
