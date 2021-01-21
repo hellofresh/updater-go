@@ -2,10 +2,9 @@ package updater
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"strings"
-
-	"github.com/palantir/stacktrace"
 )
 
 var tarGz tarGzExtractor
@@ -28,7 +27,7 @@ func (tarGzExtractor) Match(filename string) bool {
 func (t tarGzExtractor) FetchBinary(input io.Reader, isBinary BinaryFilter) (io.Reader, error) {
 	gzr, err := gzip.NewReader(input)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "error decompressing")
+		return nil, fmt.Errorf("error decompressing: %w", err)
 	}
 	defer gzr.Close()
 

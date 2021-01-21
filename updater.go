@@ -2,13 +2,13 @@ package updater
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/Masterminds/semver"
-	"github.com/palantir/stacktrace"
+	"github.com/Masterminds/semver/v3"
 )
 
 type (
@@ -91,24 +91,24 @@ func SelfUpdate(release Release) error {
 	// Download the release
 	archive, err := DefaultDownloader.Fetch(release)
 	if err != nil {
-		return stacktrace.Propagate(err, "failed to fetch the release")
+		return fmt.Errorf("failed to fetch the release: %w", err)
 	}
 	defer archive.Close()
 
 	// Extract the release
 	extractor := MatchingExtractor(release.Asset)
 	if extractor == nil {
-		return stacktrace.Propagate(os.ErrNotExist, "no extractor is available for the release asset")
+		return fmt.Errorf("no extractor is available for the release asset: %w", os.ErrNotExist)
 	}
 
 	binary, err := extractor.FetchBinary(archive, isExecutingBinary)
 	if err != nil {
-		return stacktrace.Propagate(err, "unable to locate binary in release asset")
+		return fmt.Errorf("unable to locate binary in release asset: %w", err)
 	}
 
 	// Apply update
 	if err := Apply(binary, binaryPath, binaryMode); err != nil {
-		return stacktrace.Propagate(err, "unable to apply update")
+		return fmt.Errorf("unable to apply update: %w", err)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func LatestRelease(locator ReleaseLocator) (Release, error) {
 
 	releases, err := locator.ListReleases(50)
 	if err != nil {
-		return latestRelease, stacktrace.Propagate(err, "unable to fetch releases")
+		return latestRelease, fmt.Errorf("unable to fetch releases: %w", err)
 	}
 
 	if len(releases) == 0 {
@@ -141,7 +141,7 @@ func LatestRelease(locator ReleaseLocator) (Release, error) {
 	}
 
 	if latestVersion == nil {
-		return latestRelease, stacktrace.Propagate(err, "unable to find the latest release")
+		return latestRelease, fmt.Errorf("unable to find the latest release: %w", err)
 	}
 
 	return latestRelease, nil
@@ -156,12 +156,12 @@ func StableRelease(_ string, draft bool, preRelease bool) bool {
 func executableInfo() (string, os.FileMode, error) {
 	binaryPath, err := os.Executable()
 	if err != nil {
-		return "", 0755, stacktrace.Propagate(err, "unable to get executable")
+		return "", 0755, fmt.Errorf("unable to get executable: %w", err)
 	}
 
 	binaryStats, err := os.Stat(binaryPath)
 	if err != nil {
-		return binaryPath, 0755, stacktrace.Propagate(err, "unable to stat executable")
+		return binaryPath, 0755, fmt.Errorf("unable to stat executable: %w", err)
 	}
 
 	return binaryPath, binaryStats.Mode(), nil

@@ -1,10 +1,9 @@
 package updater
 
 import (
+	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/palantir/stacktrace"
 )
 
 // HTTPDownloader represents http downloader client
@@ -26,14 +25,14 @@ func NewHTTPDownloader(client *http.Client) *HTTPDownloader {
 func (d *HTTPDownloader) Fetch(r Release) (io.ReadCloser, error) {
 	req, err := http.NewRequest(http.MethodGet, r.URL, nil)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "could not create a request for the release download URL")
+		return nil, fmt.Errorf("could not create a request for the release download URL: %w", err)
 	}
 
 	req.Header.Add("Accept", "application/octet-stream")
 
 	resp, err := d.client.Do(req)
 	if err != nil {
-		return nil, stacktrace.Propagate(err, "unable to download release")
+		return nil, fmt.Errorf("unable to download release: %w", err)
 	}
 
 	return resp.Body, nil

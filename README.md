@@ -1,6 +1,6 @@
 # updater-go
 
-Library that heps verifying/updating go binary with new version
+Library that helps verifying/updating go binary with new version
 
 ## Usage example
 
@@ -8,14 +8,15 @@ Library that heps verifying/updating go binary with new version
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
-	"github.com/hellofresh/updater-go"
-	"github.com/palantir/stacktrace"
+	"github.com/hellofresh/updater-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ const (
 func main() {
 	var (
 		updateToVersion string
-		ghToken string
+		ghToken         string
 	)
 	flag.StringVar(&updateToVersion, "version", "", "update to a particular version instead of the latest stable")
 	flag.StringVar(&ghToken, "token", "", "GitHub token to use for Github access")
@@ -38,7 +39,7 @@ func main() {
 	versionFilter := updater.StableRelease
 	if updateToVersion != "" {
 		versionFilter = func(name string, _ bool, _ bool) bool {
-		return updateToVersion == name
+			return updateToVersion == name
 		}
 	}
 
@@ -51,11 +52,12 @@ func main() {
 		func(asset string) bool {
 			return strings.Contains(asset, fmt.Sprintf("-%s-%s-", runtime.GOARCH, runtime.GOOS))
 		},
+		10*time.Second,
 	)
 
 	// Find the release
 	updateTo, err := locateRelease(locator, updateToVersion)
-	if rootErr := stacktrace.RootCause(err); rootErr == updater.ErrNoRepository {
+	if rootErr := errors.Unwrap(err); rootErr == updater.ErrNoRepository {
 		log.Error("Unable to access the Jetstream repository.\n  This is probably due to insufficient privileges of the access token.")
 		os.Exit(1)
 	}
