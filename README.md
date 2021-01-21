@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/hellofresh/updater-go/v2"
-	"github.com/palantir/stacktrace"
 	log "github.com/sirupsen/logrus"
 )
 
