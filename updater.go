@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -25,13 +26,13 @@ type (
 	// ReleaseLocator describing a release locator that will fetch releases.
 	// A release locator should use the ReleaseFilter and AssetFilter during initialization.
 	ReleaseLocator interface {
-		ListReleases(amount int) ([]Release, error)
+		ListReleases(ctx context.Context, amount int) ([]Release, error)
 	}
 
 	// ReleaseDownloader describes a way to download/load a release
 	ReleaseDownloader interface {
 		// Fetch downloads the release
-		Fetch(r Release) (io.ReadCloser, error)
+		Fetch(ctx context.Context, r Release) (io.ReadCloser, error)
 	}
 
 	// Extractor represent a archive extractor
@@ -66,17 +67,17 @@ func init() {
 }
 
 // SelfUpdateToLatest update the current executable to it's latest version
-func SelfUpdateToLatest(locator ReleaseLocator) (Release, error) {
-	latest, err := LatestRelease(locator)
+func SelfUpdateToLatest(ctx context.Context, locator ReleaseLocator) (Release, error) {
+	latest, err := LatestRelease(ctx, locator)
 	if err != nil {
 		return latest, err
 	}
 
-	return latest, SelfUpdate(latest)
+	return latest, SelfUpdate(ctx, latest)
 }
 
 // SelfUpdate update the current executable to the release
-func SelfUpdate(release Release) error {
+func SelfUpdate(ctx context.Context, release Release) error {
 	// Fetch binary information
 	binaryPath, binaryMode, err := executableInfo()
 	if err != nil {
@@ -89,7 +90,7 @@ func SelfUpdate(release Release) error {
 	}
 
 	// Download the release
-	archive, err := DefaultDownloader.Fetch(release)
+	archive, err := DefaultDownloader.Fetch(ctx, release)
 	if err != nil {
 		return fmt.Errorf("failed to fetch the release: %w", err)
 	}
@@ -115,10 +116,10 @@ func SelfUpdate(release Release) error {
 }
 
 // LatestRelease retrieve the latest release from the locator using semver
-func LatestRelease(locator ReleaseLocator) (Release, error) {
+func LatestRelease(ctx context.Context, locator ReleaseLocator) (Release, error) {
 	var latestRelease Release
 
-	releases, err := locator.ListReleases(50)
+	releases, err := locator.ListReleases(ctx, 50)
 	if err != nil {
 		return latestRelease, fmt.Errorf("unable to fetch releases: %w", err)
 	}

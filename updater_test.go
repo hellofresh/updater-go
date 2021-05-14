@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -13,8 +14,8 @@ type mockReleaseLocator struct {
 	mock.Mock
 }
 
-func (m *mockReleaseLocator) ListReleases(amount int) ([]Release, error) {
-	args := m.Called(amount)
+func (m *mockReleaseLocator) ListReleases(ctx context.Context, amount int) ([]Release, error) {
+	args := m.Called(ctx, amount)
 	arg0 := args.Get(0)
 	if arg0 == nil {
 		return nil, args.Error(1)
@@ -32,9 +33,9 @@ func TestStableRelease(t *testing.T) {
 
 func TestLatestRelease(t *testing.T) {
 	locator := new(mockReleaseLocator)
-	locator.On("ListReleases", mock.Anything).Return(nil, ErrNoRepository)
+	locator.On("ListReleases", mock.Anything, mock.Anything).Return(nil, ErrNoRepository)
 
-	_, err := LatestRelease(locator)
+	_, err := LatestRelease(context.Background(), locator)
 	require.Error(t, err)
 	assert.NotEqual(t, ErrNoRepository, err)
 	assert.Equal(t, ErrNoRepository, errors.Unwrap(err))

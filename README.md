@@ -8,6 +8,7 @@ Library that helps verifying/updating go binary with new version
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,13 +17,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hellofresh/updater-go/v2"
+	"github.com/hellofresh/updater-go/v3"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	githubOwner = "hellofresh"
-	githubRepo  = "jetstream"
+	githubRepo  = "github-cli"
 )
 
 func main() {
@@ -45,6 +46,7 @@ func main() {
 
 	// Create release locator
 	locator := updater.NewGithubClient(
+		context.TODO(),
 		githubOwner,
 		githubRepo,
 		ghToken,
@@ -52,19 +54,19 @@ func main() {
 		func(asset string) bool {
 			return strings.Contains(asset, fmt.Sprintf("-%s-%s-", runtime.GOARCH, runtime.GOOS))
 		},
-		10*time.Second,
+		10 * time.Second,
 	)
 
 	// Find the release
 	updateTo, err := locateRelease(locator, updateToVersion)
-	if rootErr := errors.Unwrap(err); rootErr == updater.ErrNoRepository {
-		log.Error("Unable to access the Jetstream repository.\n  This is probably due to insufficient privileges of the access token.")
+	if errors.Is(err, updater.ErrNoRepository) || errors.Is(err, updater.ErrUnauthorized) {
+		log.WithError(err).Error("Unable to access the repository.\n  This is probably due to insufficient privileges of the access token.")
 		os.Exit(1)
 	}
 	failOnError(err, "failed to retrieve the update release")
 
 	// Fetch the release and update
-	err = updater.SelfUpdate(updateTo)
+	err = updater.SelfUpdate(context.TODO(), updateTo)
 	failOnError(err, "failed to update to version %s")
 
 	fmt.Printf("Successfully updated to version %s!\n", updateTo.Name)
@@ -80,12 +82,12 @@ func failOnError(err error, message string) {
 func locateRelease(locator updater.ReleaseLocator, version string) (updater.Release, error) {
 	// No specific version use the latest
 	if version == "" {
-		return updater.LatestRelease(locator)
+		return updater.LatestRelease(context.TODO(), locator)
 	}
 
 	// Find a specific release
 	var release updater.Release
-	updates, err := locator.ListReleases(1)
+	updates, err := locator.ListReleases(context.TODO(), 1)
 	if err != nil {
 		return release, err
 	}

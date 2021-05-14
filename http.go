@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,8 +23,8 @@ func NewHTTPDownloader(client *http.Client) *HTTPDownloader {
 }
 
 // Fetch downloads GH release
-func (d *HTTPDownloader) Fetch(r Release) (io.ReadCloser, error) {
-	req, err := http.NewRequest(http.MethodGet, r.URL, nil)
+func (d *HTTPDownloader) Fetch(ctx context.Context, r Release) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.URL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create a request for the release download URL: %w", err)
 	}

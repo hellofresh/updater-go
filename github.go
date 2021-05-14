@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/shurcooL/githubv4"
@@ -45,18 +46,21 @@ type (
 					HasNextPage githubv4.Boolean
 				}
 				Nodes []ghRelease
-			} `graphql:"releases(first: 50, after: $releaseCursor, orderBy: {field:CREATED_AT, direction: DESC})"`
+			} `graphql:"releases(first: $limit, after: $releaseCursor, orderBy: {field:CREATED_AT, direction: DESC})"`
 		} `graphql:"repository(owner: $repositoryOwner, name: $repositoryName)"`
 	}
 )
 
 var (
-	// ErrNoRepository error is returned is the repository is not found or user token has no access to it
+	// ErrNoRepository error is returned if the repository is not found or user token has no access to it
 	ErrNoRepository = errors.New("no repository")
+	// ErrUnauthorized error is returned if user token does not have access to the repository or the token is invalid
+	ErrUnauthorized = errors.New("no access to the repository, probably bad credentials")
 )
 
 // NewGithubClient creates new github locator instance
 func NewGithubClient(
+	ctx context.Context,
 	owner string,
 	repository string,
 	token string,
@@ -69,7 +73,7 @@ func NewGithubClient(
 		src := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: token},
 		)
-		httpClient = oauth2.NewClient(context.Background(), src)
+		httpClient = oauth2.NewClient(ctx, src)
 		httpClient.Timeout = connectionTimeout
 	}
 
@@ -87,18 +91,23 @@ func NewGithubClient(
 	}
 }
 
-// ListReleases returns available GH releases list
-func (g *GithubLocator) ListReleases(amount int) ([]Release, error) {
+// ListReleases returns available GH releases list.
+func (g *GithubLocator) ListReleases(ctx context.Context, amount int) ([]Release, error) {
 	variables := map[string]interface{}{
 		"repositoryOwner": githubv4.String(g.owner),
 		"repositoryName":  githubv4.String(g.repo),
 		"releaseCursor":   (*githubv4.String)(nil), // Null after argument to get first page.
+		"limit":           githubv4.Int(amount),
 	}
 
 	var query queryRepoReleases
 	var releases []Release
 	for {
-		if err := g.client.Query(context.TODO(), &query, variables); err != nil {
+		if err := g.client.Query(ctx, &query, variables); err != nil {
+			if strings.Contains(err.Error(), "non-200 OK status code: 401 Unauthorized") {
+				return nil, ErrUnauthorized
+			}
+
 			return nil, err
 		}
 
