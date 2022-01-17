@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
@@ -66,7 +65,6 @@ func NewGithubClient(
 	token string,
 	releaseFilter ReleaseFilter,
 	assetFilter AssetFilter,
-	connectionTimeout time.Duration,
 ) *GithubLocator {
 	var httpClient *http.Client
 	if token != "" {
@@ -74,11 +72,6 @@ func NewGithubClient(
 			&oauth2.Token{AccessToken: token},
 		)
 		httpClient = oauth2.NewClient(ctx, src)
-		httpClient.Timeout = connectionTimeout
-	}
-
-	if httpClient == nil {
-		httpClient = &http.Client{Timeout: connectionTimeout}
 	}
 
 	client := githubv4.NewClient(httpClient)
