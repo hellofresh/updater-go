@@ -70,8 +70,6 @@ func NewGithubClient(
 	connectionTimeout time.Duration,
 ) *GithubLocator {
 	var httpClient *http.Client
-	ctx, cancel := ensureTimeout(ctx, connectionTimeout)
-	defer cancel()
 
 	if token != "" {
 		src := oauth2.StaticTokenSource(
