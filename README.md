@@ -54,6 +54,7 @@ func main() {
 		func(asset string) bool {
 			return strings.Contains(asset, fmt.Sprintf("-%s-%s-", runtime.GOARCH, runtime.GOOS))
 		},
+		10 * time.Second,
 	)
 
 	// Find the release
@@ -64,8 +65,8 @@ func main() {
 	}
 	failOnError(err, "failed to retrieve the update release")
 
-	// Use context with deadlines to specify timeouts (optional)
-	ctx, cancel := context.WithTimeout(context.TODO(), 10 * time.Second)
+	// Use context with deadlines to specify different timeouts (optional)
+	ctx, cancel := context.WithTimeout(context.TODO(), 30 * time.Second)
 	defer cancel()
 
 	// Fetch the release and update

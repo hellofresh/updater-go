@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
@@ -13,7 +14,8 @@ import (
 type (
 	// GithubLocator struct encapsulates information about github repo
 	GithubLocator struct {
-		client *githubv4.Client
+		client         *githubv4.Client
+		defaultTimeout time.Duration
 
 		owner string
 		repo  string
@@ -65,8 +67,12 @@ func NewGithubClient(
 	token string,
 	releaseFilter ReleaseFilter,
 	assetFilter AssetFilter,
+	connectionTimeout time.Duration,
 ) *GithubLocator {
 	var httpClient *http.Client
+	ctx, cancel := ensureTimeout(ctx, connectionTimeout)
+	defer cancel()
+
 	if token != "" {
 		src := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: token},
@@ -76,16 +82,20 @@ func NewGithubClient(
 
 	client := githubv4.NewClient(httpClient)
 	return &GithubLocator{
-		client:        client,
-		owner:         owner,
-		repo:          repository,
-		acceptRelease: releaseFilter,
-		acceptAsset:   assetFilter,
+		client:         client,
+		owner:          owner,
+		repo:           repository,
+		acceptRelease:  releaseFilter,
+		acceptAsset:    assetFilter,
+		defaultTimeout: connectionTimeout,
 	}
 }
 
 // ListReleases returns available GH releases list.
 func (g *GithubLocator) ListReleases(ctx context.Context, amount int) ([]Release, error) {
+	ctx, cancel := ensureTimeout(ctx, g.defaultTimeout)
+	defer cancel()
+
 	variables := map[string]interface{}{
 		"repositoryOwner": githubv4.String(g.owner),
 		"repositoryName":  githubv4.String(g.repo),
@@ -139,4 +149,12 @@ func (g *GithubLocator) ListReleases(ctx context.Context, amount int) ([]Release
 	}
 
 	return releases, nil
+}
+
+func ensureTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); !ok {
+		return context.WithTimeout(ctx, timeout)
+	}
+
+	return ctx, func() {}
 }
