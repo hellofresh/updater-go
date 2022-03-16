@@ -1,6 +1,6 @@
-# updater-go
+# Updater Go
 
-Library that helps verifying/updating go binary with new version
+Library that helps to verify/update go binary with new version
 
 ## Usage example
 
@@ -107,7 +107,3 @@ func locateRelease(locator updater.ReleaseLocator, version string) (updater.Rele
 	return updates[0], nil
 }
 ```
-
----
-> GitHub [@hellofresh](https://github.com/hellofresh) &nbsp;&middot;&nbsp;
-> Medium [@engineering.hellofresh](https://engineering.hellofresh.com)

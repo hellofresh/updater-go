@@ -1,0 +1,11 @@
+site_name: 'Updater Go'
+site_description: 'Main documentation and guide for Updater Go'
+
+plugins:
+  - techdocs-core
+
+markdown_extensions:
+  - admonition
+
+nav:
+  - Home: index.md
