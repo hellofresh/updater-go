@@ -11,13 +11,13 @@ import (
 // Apply performs an update of the current executable (or opts.TargetFile, if set) with the contents of the given io.Reader.
 //
 // Apply performs the following actions to ensure a safe cross-platform update:
-// - Creates a new file, /path/to/.target.new with the TargetMode with the contents of the updated file
-// - Renames /path/to/target to /path/to/.target.old
-// - Renames /path/to/.target.new to /path/to/target
-// - If the final rename is successful, deletes /path/to/.target.old, returns no error. On Windows,
-//   the removal of /path/to/target.old always fails, so instead Apply hides the old file instead.
-// - If the final rename fails, attempts to roll back by renaming /path/to/.target.old
-//   back to /path/to/target.
+//   - Creates a new file, /path/to/.target.new with the TargetMode with the contents of the updated file
+//   - Renames /path/to/target to /path/to/.target.old
+//   - Renames /path/to/.target.new to /path/to/target
+//   - If the final rename is successful, deletes /path/to/.target.old, returns no error. On Windows,
+//     the removal of /path/to/target.old always fails, so instead Apply hides the old file instead.
+//   - If the final rename fails, attempts to roll back by renaming /path/to/.target.old
+//     back to /path/to/target.
 //
 // If the roll back operation fails, the file system is left in an inconsistent state where
 // there is no new executable file and the old executable file could not be be moved to its original location. In this

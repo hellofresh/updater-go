@@ -3,18 +3,26 @@ package updater
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/shurcooL/githubv4"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 )
+
+const instrumentationName = "github.com/hellofresh/updater-go"
 
 type (
 	// GithubLocator struct encapsulates information about github repo
 	GithubLocator struct {
 		client         *githubv4.Client
+		tracer         trace.Tracer
 		defaultTimeout time.Duration
 
 		owner string
@@ -68,7 +76,21 @@ func NewGithubClient(
 	releaseFilter ReleaseFilter,
 	assetFilter AssetFilter,
 	connectionTimeout time.Duration,
+	opts ...GitHubLocatorOption,
 ) *GithubLocator {
+	l := &GithubLocator{
+		owner:          owner,
+		repo:           repository,
+		acceptRelease:  releaseFilter,
+		acceptAsset:    assetFilter,
+		defaultTimeout: connectionTimeout,
+		tracer:         trace.NewNoopTracerProvider().Tracer(instrumentationName),
+	}
+
+	for _, opt := range opts {
+		opt.applyGitHubLocatorOption(l)
+	}
+
 	var httpClient *http.Client
 
 	if token != "" {
@@ -78,19 +100,28 @@ func NewGithubClient(
 		httpClient = oauth2.NewClient(ctx, src)
 	}
 
-	client := githubv4.NewClient(httpClient)
-	return &GithubLocator{
-		client:         client,
-		owner:          owner,
-		repo:           repository,
-		acceptRelease:  releaseFilter,
-		acceptAsset:    assetFilter,
-		defaultTimeout: connectionTimeout,
-	}
+	httpClient.Transport = otelhttp.NewTransport(httpClient.Transport, formatHTTPSpanName())
+	l.client = githubv4.NewClient(httpClient)
+
+	return l
 }
 
 // ListReleases returns available GH releases list.
-func (g *GithubLocator) ListReleases(ctx context.Context, amount int) ([]Release, error) {
+func (g *GithubLocator) ListReleases(ctx context.Context, amount int) (_ []Release, err error) {
+	ctx, span := g.tracer.Start(ctx, "github:list-releases", trace.WithAttributes(
+		attribute.String("github.owner", g.owner),
+		attribute.String("github.repository", g.repo),
+		attribute.Int("github.limit", amount),
+	))
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+		}
+
+		span.End()
+	}()
+
 	ctx, cancel := ensureTimeout(ctx, g.defaultTimeout)
 	defer cancel()
 
@@ -149,10 +180,34 @@ func (g *GithubLocator) ListReleases(ctx context.Context, amount int) ([]Release
 	return releases, nil
 }
 
+// GitHubLocatorOption is an option to configure GithubLocator.
+type GitHubLocatorOption interface {
+	applyGitHubLocatorOption(l *GithubLocator)
+}
+
+type gitHubLocatorOptionFunc func(l *GithubLocator)
+
+func (f gitHubLocatorOptionFunc) applyGitHubLocatorOption(l *GithubLocator) {
+	f(l)
+}
+
+// WithTracerProvider sets the TracerProvider.
+func WithTracerProvider(tp trace.TracerProvider) GitHubLocatorOption {
+	return gitHubLocatorOptionFunc(func(o *GithubLocator) {
+		o.tracer = tp.Tracer(instrumentationName)
+	})
+}
+
 func ensureTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if _, ok := ctx.Deadline(); !ok {
 		return context.WithTimeout(ctx, timeout)
 	}
 
 	return ctx, func() {}
+}
+
+func formatHTTPSpanName() otelhttp.Option {
+	return otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+		return fmt.Sprintf("http:%s:%s", r.Method, r.URL.Path)
+	})
 }
