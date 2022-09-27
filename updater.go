@@ -157,12 +157,12 @@ func StableRelease(_ string, draft bool, preRelease bool) bool {
 func executableInfo() (string, os.FileMode, error) {
 	binaryPath, err := os.Executable()
 	if err != nil {
-		return "", 0755, fmt.Errorf("unable to get executable: %w", err)
+		return "", 0o755, fmt.Errorf("unable to get executable: %w", err)
 	}
 
 	binaryStats, err := os.Stat(binaryPath)
 	if err != nil {
-		return binaryPath, 0755, fmt.Errorf("unable to stat executable: %w", err)
+		return binaryPath, 0o755, fmt.Errorf("unable to stat executable: %w", err)
 	}
 
 	return binaryPath, binaryStats.Mode(), nil
