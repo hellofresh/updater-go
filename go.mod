@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.1
 	go.opentelemetry.io/otel v1.10.0
 	go.opentelemetry.io/otel/trace v1.10.0
-	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
+	golang.org/x/oauth2 v0.9.0
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opentelemetry.io/otel/metric v0.32.1 // indirect
-	golang.org/x/net v0.0.0-20220926192436-02166a98028e // indirect
+	golang.org/x/net v0.11.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
