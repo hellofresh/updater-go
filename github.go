@@ -55,7 +55,7 @@ type (
 					HasNextPage githubv4.Boolean
 				}
 				Nodes []ghRelease
-			} `graphql:"releases(first: $limit, after: $releaseCursor, orderBy: {field:CREATED_AT, direction: DESC})"`
+			} `graphql:"releases(first: 10, after: $releaseCursor, orderBy: {field:CREATED_AT, direction: DESC})"`
 		} `graphql:"repository(owner: $repositoryOwner, name: $repositoryName)"`
 	}
 )
@@ -129,7 +129,6 @@ func (g *GithubLocator) ListReleases(ctx context.Context, amount int) (_ []Relea
 		"repositoryOwner": githubv4.String(g.owner),
 		"repositoryName":  githubv4.String(g.repo),
 		"releaseCursor":   (*githubv4.String)(nil), // Null after argument to get first page.
-		"limit":           githubv4.Int(amount),
 	}
 
 	var query queryRepoReleases
@@ -169,6 +168,7 @@ func (g *GithubLocator) ListReleases(ctx context.Context, amount int) (_ []Relea
 			}
 		}
 
+		// If we do not have enough releases, we will continue to fetch the next page
 		if len(releases) < amount && query.Repository.Releases.PageInfo.HasNextPage {
 			variables["releaseCursor"] = githubv4.NewString(query.Repository.Releases.PageInfo.EndCursor)
 			continue
