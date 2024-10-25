@@ -169,7 +169,7 @@ func (g *GithubLocator) ListReleases(ctx context.Context, amount int) (_ []Relea
 			}
 		}
 
-		if query.Repository.Releases.PageInfo.HasNextPage {
+		if len(releases) < amount && query.Repository.Releases.PageInfo.HasNextPage {
 			variables["releaseCursor"] = githubv4.NewString(query.Repository.Releases.PageInfo.EndCursor)
 			continue
 		}
