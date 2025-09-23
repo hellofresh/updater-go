@@ -1,15 +1,22 @@
-# See https://golangci-lint.run/usage/configuration/#config-file for more information
-run:
-  timeout: 5m
+version: "2"
 linters:
-  disable-all: true
+  default: none
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
   enable:
     - gofmt
-    - golint
     - goimports
-  fast: false
-linters-settings:
-  gofmt:
-    simplify: false
-issues:
-  exclude-use-default: false
+  settings:
+    gofmt:
+      simplify: false
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
