@@ -17,9 +17,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.49.0
+        uses: golangci/golangci-lint-action@v8
+
 
   test:
     name: Test
